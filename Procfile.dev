@@ -1,0 +1,2 @@
+web: nodemon --watch web-server web-server
+ember: ember server
