@@ -1,0 +1,33 @@
+#! /usr/bin/env bash
+
+## This script builds the app during heroku deploy.
+
+# e: blow up on error, x: echo expanded commands
+set -ex
+
+# upload a sourcemap to rollbar
+# @param prefix [String] the filename prefix
+upload_sourcemap () {
+  js=$(basename dist/assets/$1-*.js)
+  map=$(basename dist/assets/$1-*.map)
+
+  # strip trailing slash if there is one
+  asset_url=${CDN_URL%/}
+
+  # send over that source map!
+  curl https://api.rollbar.com/api/1/sourcemap \
+    -F access_token=$ROLLBAR_SERVER_TOKEN \
+    -F version=$SOURCE_VERSION \
+    -F minified_url=$asset_url/assets/$js \
+    -F source_map=@dist/assets/$map
+}
+
+## Detect heroku
+if [ "$NODE_ENV" == "production" ]; then
+  bower install
+  ember build --environment=production
+  upload_sourcemap canvas-web
+  upload_sourcemap vendor
+else
+  echo "Not on heroku"
+fi
